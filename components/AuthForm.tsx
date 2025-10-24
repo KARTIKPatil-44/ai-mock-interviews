@@ -12,6 +12,9 @@ import Link from "next/link"
 import { toast } from "sonner"
 import FormField from "@/components/FormField";
 import { useRouter } from "next/navigation"
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth"
+import { auth } from "@/firebase/client"
+import { signIn, signUp } from "@/lib/actions/auth.action"
 
 type FormType = "sign-in" | "sign-up"
 
@@ -35,15 +38,48 @@ const AuthForm = ({ type }: { type: FormType }) => {
     },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       if (type === "sign-up") {
+        const { name, email, password } = values;
+
+        const userCredentials = await createUserWithEmailAndPassword(auth, email, password);
+        const result = await signUp({
+          uid: userCredentials.user.uid,
+          name: name!,
+          email,
+          password,
+
+        })
+
+        if(!result?.success){
+          toast.error(result?.message);
+          return;
+        }
+
         toast.success('Account created successfully. Please sign in.');
         router.push('/sign-in');
       } else {
+
+        const{email, password} = values;
+
+        const userCredentials = await signInWithEmailAndPassword(auth, email, password);
+
+        const idToken = await userCredentials.user.getIdToken();
+
+        if(!idToken){
+          toast.error('Sign in failed')
+          return;
+        }
+
+        await signIn({
+          email, idToken
+
+        })
+
         toast.success("Sign in successuflly");
         router.push('/');
-        
+
       }
     } catch (error) {
       console.log(error)
@@ -53,7 +89,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
 
   const isSignIn = type === "sign-in"
   const [isMounted, setIsMounted] = useState(false)
-  
+
   // Fix hydration mismatch by only rendering form after client-side mount
   useEffect(() => {
     setIsMounted(true)
@@ -80,26 +116,26 @@ const AuthForm = ({ type }: { type: FormType }) => {
               {/* Conditionally render name field */}
               {!isSignIn && (
                 <FormField
-                 control={form.control}
-                name="name"
-                label="Name"  
-                placeholder="Enter your Name"
+                  control={form.control}
+                  name="name"
+                  label="Name"
+                  placeholder="Enter your Name"
                 />
               )}
-               <FormField
-                 control={form.control}
+              <FormField
+                control={form.control}
                 name="email"
-                label="Email"  
+                label="Email"
                 placeholder="Enter your Email"
                 type="email"
-                />
-                 <FormField
-                 control={form.control}
+              />
+              <FormField
+                control={form.control}
                 name="password"
-                label="Password"  
+                label="Password"
                 placeholder="Enter your Password"
                 type="password"
-                />
+              />
 
               <Button className="btn" type="submit">
                 {isSignIn ? "Sign in" : "Create an Account"}

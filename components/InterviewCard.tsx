@@ -60,15 +60,15 @@ const InterviewCard = ({
 
                     <Button className="btn-primary" >
                         <Link href={feedback
-                        ? `/interview/${interviewId}/feedback`
-                        : `/interview/${interviewId}`
+                            ? `/interview/${interviewId}/feedback`
+                            : `/interview/${interviewId}`
 
                         }>
                             {feedback ? 'Check Feedback' : 'View Interview'}
-                         </Link>
+                        </Link>
 
                     </Button>
-                    
+
                 </div>
             </div>
         </div>
